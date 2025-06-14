@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoALA: 认知语言智能体的认知架构</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700&display=swap');
+
+        :root {
+            --bg-color: #0a0a0a;
+            --text-color: #fafafa;
+            --accent-color: #ffffff;
+            --secondary-text-color: #a0a0a0;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Noto Sans SC', 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            font-weight: 300;
+        }
+
+        .presentation-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            padding: 5vw;
+            box-sizing: border-box;
+            text-align: center;
+            opacity: 0;
+            transform: translateX(50px);
+            transition: all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+        .slide.active {
+            display: flex;
+            opacity: 1;
+            transform: translateX(0);
+        }
+        
+        .slide.prev {
+            transform: translateX(-50px);
+        }
+        
+        .slide.next {
+            transform: translateX(50px);
+        }
+
+        .slide-content {
+            max-width: 800px;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5em;
+            color: var(--accent-color);
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slideInUp 1s ease-out 0.3s forwards;
+        }
+
+        h2 {
+            font-size: 2.2rem;
+            font-weight: 400;
+            color: var(--secondary-text-color);
+            margin-bottom: 1em;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: slideInUp 0.8s ease-out 0.1s forwards;
+        }
+        
+        @keyframes slideInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+            }
+        }
+
+        p, li {
+            font-size: 1.4rem;
+            line-height: 1.8;
+            text-align: left;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: slideInUp 0.6s ease-out 0.5s forwards;
+        }
+        
+        strong {
+            font-weight: 700;
+            color: var(--accent-color);
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+            display: inline-block;
+        }
+
+        li {
+            margin-bottom: 0.8em;
+            position: relative;
+            padding-left: 2em;
+        }
+
+        li::before {
+            content: '–';
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+        
+        .slide-footer {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--secondary-text-color);
+            font-size: 0.9rem;
+            padding: 8px 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .slide-footer:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            z-index: 1000;
+        }
+
+        .nav-btn {
+            background: none;
+            border: 1px solid var(--secondary-text-color);
+            color: var(--secondary-text-color);
+            padding: 12px 24px;
+            margin: 0 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            border-radius: 25px;
+            transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.15);
+        }
+        
+        .nav-btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+        
+        .nav-btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            transition: all 0.6s ease;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        
+        .nav-btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .source {
+            font-size: 1rem;
+            color: var(--secondary-text-color);
+            margin-top: 2em;
+        }
+        
+        .audio-player {
+            margin-top: 2em;
+            margin-bottom: 1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transform: translateY(15px);
+            animation: slideInUp 0.8s ease-out 0.7s forwards;
+        }
+        
+        .custom-audio-player {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 25px;
+            border: 1px solid var(--secondary-text-color);
+            border-radius: 50px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+        
+        .custom-audio-player:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        .play-button {
+            width: 50px;
+            height: 50px;
+            border: 2px solid var(--accent-color);
+            border-radius: 50%;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+        
+        .play-button.playing {
+            animation: pulse 2s infinite;
+        }
+        
+        .play-button::before {
+            content: '';
+            width: 0;
+            height: 0;
+            border-left: 12px solid var(--accent-color);
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            margin-left: 3px;
+            transition: all 0.3s ease;
+        }
+        
+        .play-button.playing::before {
+            border: none;
+            width: 3px;
+            height: 16px;
+            background: var(--accent-color);
+            margin-left: -6px;
+            box-shadow: 6px 0 0 var(--accent-color);
+        }
+        
+        .audio-info {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .audio-title {
+            color: var(--accent-color);
+            font-size: 0.9rem;
+            font-weight: 400;
+        }
+        
+        .audio-progress {
+            width: 200px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .audio-progress-bar {
+            height: 100%;
+            background: var(--accent-color);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .audio-time {
+            color: var(--secondary-text-color);
+            font-size: 0.8rem;
+            font-family: monospace;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 5px;
+        }
+        
+        .speed-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: var(--secondary-text-color);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: monospace;
+        }
+        
+        .speed-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+        
+        .speed-btn.active {
+            background: var(--accent-color);
+            color: var(--bg-color);
+            font-weight: bold;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { 
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+            }
+        }
+        
+        .audio-player audio {
+            display: none;
+        }
+        
+        .progress-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 1000;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-color), rgba(255, 255, 255, 0.8));
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .keyboard-hint {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 10px 15px;
+            color: var(--secondary-text-color);
+            font-size: 0.8rem;
+            backdrop-filter: blur(10px);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .keyboard-hint.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .keyboard-hint .key {
+            display: inline-block;
+            padding: 2px 6px;
+            margin: 0 2px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 0.7rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress-indicator">
+    <div class="progress-bar" id="progressBar"></div>
+</div>
+
+<div class="keyboard-hint" id="keyboardHint">
+    <span class="key">←</span> <span class="key">→</span> <span class="key">Space</span> 导航
+</div>
+
+<div class="presentation-container">
+    <!-- Slide 1: Title -->
+    <div class="slide active">
+        <div class="slide-content">
+            <h2>Cognitive Architectures for Language Agents</h2>
+            <h1>CoALA</h1>
+            <p style="text-align: center; color: var(--secondary-text-color);">认知语言智能体的认知架构</p>
+            <div class="audio-player">
+                <div class="custom-audio-player">
+                    <button class="play-button" id="playButton"></button>
+                    <div class="audio-info">
+                        <div class="audio-title">语言智能体的认知架构</div>
+                        <div class="audio-progress" id="audioProgress">
+                            <div class="audio-progress-bar" id="audioProgressBar"></div>
+                        </div>
+                        <div class="audio-time">
+                            <span id="currentTime">00:00</span> / <span id="totalTime">07:25</span>
+                        </div>
+                        <div class="speed-control">
+                            <button class="speed-btn" data-speed="0.75">0.75x</button>
+                            <button class="speed-btn active" data-speed="1">1x</button>
+                            <button class="speed-btn" data-speed="1.25">1.25x</button>
+                            <button class="speed-btn" data-speed="1.5">1.5x</button>
+                        </div>
+                    </div>
+                </div>
+                <audio id="audioElement">
+                    <source src="语言智能体的认知架构.wav" type="audio/wav">
+                    您的浏览器不支持音频播放。
+                </audio>
+            </div>
+            <div class="source">
+                Theodore R. Sumers, Shunyu Yao, Karthik Narasimhan, Thomas L. Griffiths<br>
+                arXiv:2309.02427v3
+            </div>
+        </div>
+    </div>
+
+    <!-- Slide 2: Background -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>背景：语言智能体的兴起</h1>
+            <ul>
+                <li>大型语言模型 (LLM) 已被增强，以与外部世界交互或使用内部控制流。</li>
+                <li>这催生了一类新系统：<strong>语言智能体 (Language Agents)</strong>。</li>
+                <li>虽然经验上取得了巨大成功，但当前研究<strong>缺乏一个统一的框架</strong>来组织和规划其发展。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 3: Core Idea -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>核心思想：连接历史与未来</h1>
+            <ul>
+                <li>从认知科学和符号AI的历史中汲取灵感。</li>
+                <li>将 <strong>LLM</strong> 与经典的 <strong>生产系统 (Production Systems)</strong> 进行类比。</li>
+                <li>借鉴用于生产系统的 <strong>认知架构 (Cognitive Architectures)</strong> 概念来控制和组织LLM。</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Slide 4: CoALA Framework -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>CoALA 框架：一个概念性蓝图</h1>
+             <p>一个用于描述、构建和分析语言智能体的概念框架，全称为 <strong>Co</strong>gnitive <strong>A</strong>rchitectures for <strong>L</strong>anguage <strong>A</strong>gents。</p>
+            <ul>
+                <li><strong>模块化内存 (Modular Memory)</strong></li>
+                <li><strong>结构化行动空间 (Structured Action Space)</strong></li>
+                <li><strong>通用决策过程 (Generalized Decision-Making)</strong></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 5: Component 1: Memory -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>组件一：模块化内存</h1>
+            <p>将智能体的内部状态分解为不同的模块化组件，以支持复杂的推理和学习。</p>
+            <ul>
+                <li><strong>工作记忆 (Working Memory):</strong> 用于短期信息处理，如当前上下文、临时笔记。</li>
+                <li><strong>长期记忆 (Long-term Memory):</strong> 用于存储和检索知识、经验和技能。</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Slide 6: Component 2: Action Space -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>组件二：结构化行动空间</h1>
+            <p>行动不仅是与外部环境交互，也包括对内部状态的操作。</p>
+            <ul>
+                <li><strong>外部行动 (External Actions):</strong> 与外部环境交互（如使用工具、API调用、与人对话）。</li>
+                <li><strong>内部行动 (Internal Actions):</strong> 管理和操作内部记忆（如信息检索、推理、学习、反思）。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 7: Component 3: Decision-Making -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>组件三：通用决策过程</h1>
+            <p>一个智能体选择下一步行动的通用机制。</p>
+            <ul>
+                <li>该过程利用 LLM，整合来自<strong>记忆</strong>和<strong>环境</strong>的信息。</li>
+                <li>选择最优的<strong>内部或外部行动</strong>来达成目标。</li>
+                <li>这允许更复杂的策略，如 ReAct、思维树 (Tree of Thoughts) 等。</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Slide 8: Value of CoALA -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>CoALA 的应用价值</h1>
+            <ul>
+                <li><strong>回顾性 (Retrospective):</strong> 提供统一的词汇和分类法，系统地审视和组织大量近期工作，方便比较不同智能体架构。</li>
+                <li><strong>前瞻性 (Prospective):</strong> 为构建更强大的语言智能体指明了可行方向，帮助识别现有方法的局限性并探索新架构。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 9: Conclusion -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>结论：通往通用人工智能之路</h1>
+            <ul>
+                <li>CoALA 将当今的语言智能体置于人工智能更<strong>广阔的历史背景</strong>中。</li>
+                <li>它不仅是一个分类系统，更是一个勾勒出通往<strong>基于语言的通用智能</strong>路径的蓝图。</li>
+                <li>通过模块化、结构化和深思熟虑的决策，我们可以构建出能力更强的<strong>下一代智能体</strong>。</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Slide 10: Thank you -->
+    <div class="slide">
+        <div class="slide-content">
+            <h1>感谢观看</h1>
+            <h2>Q & A</h2>
+        </div>
+    </div>
+</div>
+
+<div class="navigation">
+    <button class="nav-btn" id="prevBtn">←</button>
+    <button class="nav-btn" id="nextBtn">→</button>
+</div>
+
+<div class="slide-footer">
+    <span id="current-slide">1</span> / <span id="total-slides">10</span>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const slides = document.querySelectorAll('.slide');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const currentSlideEl = document.getElementById('current-slide');
+        const totalSlidesEl = document.getElementById('total-slides');
+        const progressBar = document.getElementById('progressBar');
+        const keyboardHint = document.getElementById('keyboardHint');
+        
+        // Audio player elements
+        const audioElement = document.getElementById('audioElement');
+        const playButton = document.getElementById('playButton');
+        const audioProgress = document.getElementById('audioProgress');
+        const audioProgressBar = document.getElementById('audioProgressBar');
+        const currentTimeEl = document.getElementById('currentTime');
+        const totalTimeEl = document.getElementById('totalTime');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+
+        let currentSlide = 0;
+        const totalSlides = slides.length;
+        let isPlaying = false;
+
+        totalSlidesEl.textContent = totalSlides;
+
+        // Show keyboard hint on load
+        setTimeout(() => {
+            keyboardHint.classList.add('show');
+            setTimeout(() => {
+                keyboardHint.classList.remove('show');
+            }, 3000);
+        }, 1000);
+
+        function updateSlides() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove('active', 'prev', 'next');
+                if (index === currentSlide) {
+                    slide.classList.add('active');
+                } else if (index < currentSlide) {
+                    slide.classList.add('prev');
+                } else {
+                    slide.classList.add('next');
+                }
+            });
+            currentSlideEl.textContent = currentSlide + 1;
+            
+            // Update progress bar
+            const progress = ((currentSlide + 1) / totalSlides) * 100;
+            progressBar.style.width = progress + '%';
+
+            // Reset animations
+            const activeSlide = slides[currentSlide];
+            const elements = activeSlide.querySelectorAll('h1, h2, p, li, .audio-player');
+            elements.forEach((el, index) => {
+                el.style.animation = 'none';
+                el.offsetHeight; // Trigger reflow
+                el.style.animation = null;
+            });
+        }
+
+        function showNextSlide() {
+            currentSlide = (currentSlide + 1) % totalSlides;
+            updateSlides();
+        }
+
+        function showPrevSlide() {
+            currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+            updateSlides();
+        }
+
+        // Navigation event listeners
+        nextBtn.addEventListener('click', showNextSlide);
+        prevBtn.addEventListener('click', showPrevSlide);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight' || e.key === ' ') {
+                e.preventDefault();
+                showNextSlide();
+                // Show keyboard hint briefly
+                keyboardHint.classList.add('show');
+                setTimeout(() => keyboardHint.classList.remove('show'), 1000);
+            } else if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                showPrevSlide();
+                // Show keyboard hint briefly
+                keyboardHint.classList.add('show');
+                setTimeout(() => keyboardHint.classList.remove('show'), 1000);
+            }
+        });
+
+        // Audio player functionality
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                audioElement.pause();
+                playButton.classList.remove('playing');
+                isPlaying = false;
+            } else {
+                audioElement.play();
+                playButton.classList.add('playing');
+                isPlaying = true;
+            }
+        }
+
+        playButton.addEventListener('click', togglePlay);
+
+        audioElement.addEventListener('loadedmetadata', () => {
+            if (audioElement.duration && !isNaN(audioElement.duration)) {
+                totalTimeEl.textContent = formatTime(audioElement.duration);
+            }
+        });
+
+        // Fallback for when loadedmetadata doesn't fire
+        audioElement.addEventListener('canplaythrough', () => {
+            if (audioElement.duration && !isNaN(audioElement.duration)) {
+                totalTimeEl.textContent = formatTime(audioElement.duration);
+            }
+        });
+
+        // Additional fallback with a small delay
+        audioElement.addEventListener('loadstart', () => {
+            setTimeout(() => {
+                if (audioElement.duration && !isNaN(audioElement.duration)) {
+                    totalTimeEl.textContent = formatTime(audioElement.duration);
+                } else {
+                    // Set the known duration if metadata loading fails
+                    totalTimeEl.textContent = '07:25';
+                }
+            }, 1000);
+        });
+
+        audioElement.addEventListener('timeupdate', () => {
+            const progress = (audioElement.currentTime / audioElement.duration) * 100;
+            audioProgressBar.style.width = progress + '%';
+            currentTimeEl.textContent = formatTime(audioElement.currentTime);
+        });
+
+        audioElement.addEventListener('ended', () => {
+            playButton.classList.remove('playing');
+            isPlaying = false;
+            audioProgressBar.style.width = '0%';
+        });
+
+        audioProgress.addEventListener('click', (e) => {
+            const rect = audioProgress.getBoundingClientRect();
+            const progress = (e.clientX - rect.left) / rect.width;
+            audioElement.currentTime = progress * audioElement.duration;
+        });
+
+        // Speed control functionality
+        speedButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const speed = parseFloat(btn.dataset.speed);
+                audioElement.playbackRate = speed;
+                
+                // Update active state
+                speedButtons.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            });
+        });
+
+        updateSlides();
+    });
+</script>
+
+</body>
+</html> 
